@@ -1,5 +1,3 @@
----
-
 ## 🧠 HTTP Methods Overview
 
 | Method | Action | Real-World Analogy | Used For |
