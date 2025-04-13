@@ -1,5 +1,3 @@
-This is a comprehensive explanation of **path parameters** in FastAPI — nice summary! Let’s break down and reinforce the key concepts with some explanations and a few additional notes where helpful.
-
 ---
 
 ### 🔹 What are Path Parameters?

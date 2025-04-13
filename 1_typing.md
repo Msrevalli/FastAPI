@@ -50,5 +50,3 @@ def get_name(user: Dict[str, str]) -> Optional[str]:
 
 ### FastAPI and Typing
 FastAPI relies heavily on the `typing` module to define request and response schemas and validate data automatically.
-
-Want me to show how typing fits into a FastAPI example too?

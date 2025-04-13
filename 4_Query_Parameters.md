@@ -1,5 +1,3 @@
-Absolutely! Let’s break down **Query Parameters** in **FastAPI** in detail — how they work, how to define them, and how FastAPI handles them behind the scenes.
-
 ---
 
 ## 🌐 What Are Query Parameters?
