@@ -1,4 +1,3 @@
----
 
 ### ✅ **Why and When to Use These Extra Types**
 
