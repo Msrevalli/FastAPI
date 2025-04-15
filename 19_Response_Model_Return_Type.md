@@ -338,3 +338,311 @@ This is where the `response_model` parameter comes in. FastAPI doesn't rely sole
 
 By using `response_model`, FastAPI ensures that sensitive information is excluded from the response, and it helps you structure your API responses in a consistent way.
 
+An excellent example of how to leverage **class inheritance** and **FastAPI's response model filtering** to get both **editor support** and **automatic data filtering**.
+
+### Breakdown of the Example:
+
+1. **Base Model (`BaseUser`)**:
+   - This is a base class that includes the fields `username`, `email`, and `full_name`. These fields will appear in both the input and output models.
+   
+2. **Extended Model (`UserIn`)**:
+   - `UserIn` inherits from `BaseUser` and adds the `password` field. This model is used for input (e.g., when a user submits data via a POST request), but the `password` will **not** appear in the response.
+   
+3. **Function Annotation**:
+   - The function `create_user` is annotated to return `BaseUser`, even though it's returning a `UserIn` instance (which includes the `password` field). 
+   - The key point here is that `UserIn` is a subclass of `BaseUser`, so the return type annotation is **valid**. This means that both **mypy** and the editor won't raise any issues because of type compatibility, even though `UserIn` includes extra fields.
+
+4. **FastAPI Response Model Filtering**:
+   - FastAPI automatically filters the response data to include only the fields defined in the `BaseUser` model, which means the `password` field (from `UserIn`) will not be included in the response.
+   - **How does this happen?** When FastAPI receives a `UserIn` object (which contains the `password` field), it internally uses Pydantic to serialize and validate the data. Because `BaseUser` is used as the response model, only the fields in `BaseUser` are returned, even if the function returns a `UserIn` object.
+
+---
+
+### Why This Is Beneficial
+
+1. **Editor Support**: 
+   - By using class inheritance, you maintain type compatibility. This means tools like `mypy` and your editor will correctly infer types and provide type-checking support, making it easier to detect bugs at compile time.
+   
+2. **Automatic Data Filtering**:
+   - FastAPI uses the response model (`BaseUser`) to ensure that only the relevant data is included in the response, automatically excluding sensitive fields like `password`.
+
+3. **Simplification**:
+   - You don’t need to manually filter out sensitive fields in the function. FastAPI handles that for you, making the code cleaner and easier to maintain.
+
+---
+
+### Conclusion
+
+Using inheritance to extend a base model for input data, while annotating the function return type with the base model, gives you **the best of both worlds**:
+- You get **type-checking** and **editor support** from the tools.
+- You still get **automatic data filtering** from FastAPI, ensuring sensitive fields are excluded from the response.
+
+This pattern is a great way to manage complex models where you need to send more data in the input but restrict the output for security and consistency.
+
+This explanation dives into scenarios where you might want to return something other than a Pydantic model (e.g., a `Response` or a `dict`), and how FastAPI handles such cases, along with its tooling and response generation.
+
+### Return a Response Directly
+
+FastAPI allows you to return different types of responses directly from your endpoints, which are not necessarily Pydantic models. One common use case is returning a `Response` or one of its subclasses (like `JSONResponse` or `RedirectResponse`) directly.
+
+#### Example 1: Returning a `Response` Subclass
+
+```python
+from fastapi import FastAPI, Response
+from fastapi.responses import JSONResponse, RedirectResponse
+
+app = FastAPI()
+
+@app.get("/portal")
+async def get_portal(teleport: bool = False) -> Response:
+    if teleport:
+        return RedirectResponse(url="https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+    return JSONResponse(content={"message": "Here's your interdimensional portal."})
+```
+
+**Explanation**:
+- The endpoint returns a `RedirectResponse` when `teleport=True` and a `JSONResponse` otherwise.
+- The return type is annotated as `Response`, which is a base class of both `RedirectResponse` and `JSONResponse`.
+- **FastAPI automatically handles** this because it understands that both `RedirectResponse` and `JSONResponse` are subclasses of `Response`. This provides the necessary **editor and type-checking support** (from tools like `mypy`) without needing to manually filter data or create a custom model.
+- If you annotate the return type as `Response`, FastAPI will correctly handle both cases.
+
+#### Example 2: Annotating with a Specific Response Subclass
+
+```python
+from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
+
+app = FastAPI()
+
+@app.get("/teleport")
+async def get_teleport() -> RedirectResponse:
+    return RedirectResponse(url="https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+```
+
+**Explanation**:
+- This example returns a `RedirectResponse` directly and is annotated with `RedirectResponse`.
+- Since `RedirectResponse` is a subclass of `Response`, this annotation is **correct** and FastAPI will handle it automatically. The tooling will also validate this, ensuring that only `RedirectResponse` or compatible types are returned.
+
+### Invalid Return Type Annotations
+
+FastAPI expects the return type to be either a valid Pydantic model or a subclass of `Response`. If you try to return something that isn't compatible, like a union of different types, FastAPI will **fail** to generate a response model because it can't infer the structure of the response.
+
+#### Example: Invalid Union Type Annotation
+
+```python
+from fastapi import FastAPI, Response
+from fastapi.responses import RedirectResponse
+
+app = FastAPI()
+
+@app.get("/portal")
+async def get_portal(teleport: bool = False) -> Response | dict:
+    if teleport:
+        return RedirectResponse(url="https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+    return {"message": "Here's your interdimensional portal."}
+```
+
+**Explanation**:
+- Here, you're trying to annotate the return type as a union of `Response | dict`, meaning the function could return either a `Response` object (like `RedirectResponse`) or a plain `dict`.
+- **Why this fails**: FastAPI cannot infer how to convert a `dict` into a response automatically (since it's not a subclass of `Response`). While a `Response` subclass like `JSONResponse` can easily convert a `dict`, you can't return a raw `dict` and expect FastAPI to know how to handle it.
+- FastAPI requires explicit models for data transformation (either Pydantic models or `Response` subclasses), and this union type breaks the automatic response handling.
+
+---
+
+### Disabling Response Model Generation
+
+There are cases where you may not want FastAPI to perform its usual response validation or filtering, especially if you're returning a more complex response (like a `dict` or a `Response` subclass). In such cases, you can disable the automatic response model generation by setting `response_model=None`.
+
+#### Example: Disabling Response Model Generation
+
+```python
+from fastapi import FastAPI, Response
+from fastapi.responses import RedirectResponse
+
+app = FastAPI()
+
+@app.get("/portal", response_model=None)
+async def get_portal(teleport: bool = False) -> Response | dict:
+    if teleport:
+        return RedirectResponse(url="https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+    return {"message": "Here's your interdimensional portal."}
+```
+
+**Explanation**:
+- The `response_model=None` parameter tells FastAPI **not to perform any automatic validation or filtering** on the return type.
+- In this case, you're annotating the return type as `Response | dict`, but because you've set `response_model=None`, FastAPI won't try to use the `Response` class for filtering the data. 
+- This is useful if you're working with a more flexible or custom response that doesn't need FastAPI's usual response handling (e.g., a raw `dict` or a `Response` subclass).
+
+### Summary
+
+1. **Returning `Response` or its subclasses**:
+   - You can return specific subclasses like `JSONResponse` or `RedirectResponse` and annotate the function with `Response`. FastAPI handles this automatically, and the editor and type-checking tools (like `mypy`) will understand this return type correctly.
+
+2. **Union of incompatible types**:
+   - If you return a union of incompatible types (e.g., `Response | dict`), FastAPI won't know how to handle it, and you'll get an error. You need to be specific about what type you're returning.
+
+3. **Disabling response model generation**:
+   - If you want to disable FastAPI's automatic validation and filtering for a particular endpoint, you can use `response_model=None`. This is useful when you don't need FastAPI to treat the return value as a Pydantic model or `Response`.
+
+This way, you can make sure FastAPI handles responses in the way you expect, without overcomplicating the return type or filtering logic.
+
+This section explains how FastAPI lets you control **what gets included in the response** when using Pydantic models—especially helpful when you have default values or optional fields. Here's a structured breakdown:
+
+---
+
+## 📦 The Problem
+Sometimes, you don’t want your API to return default values (like empty lists or `None`s), especially:
+- When pulling from a **NoSQL database** where not all fields are stored
+- If you want to **minimize payload size**
+- If you want to **hide unset optional data**
+
+---
+
+## ✅ Default Values in Pydantic Models
+
+```python
+class Item(BaseModel):
+    name: str
+    description: str | None = None
+    price: float
+    tax: float = 10.5
+    tags: list[str] = []
+```
+
+This model has:
+- Optional `description`
+- Default `tax = 10.5`
+- Default empty `tags = []`
+
+Now consider these items:
+
+```python
+items = {
+    "foo": {"name": "Foo", "price": 50.2},
+    "bar": {"name": "Bar", "description": "The bartenders", "price": 62, "tax": 20.2},
+    "baz": {"name": "Baz", "description": None, "price": 50.2, "tax": 10.5, "tags": []},
+}
+```
+
+---
+
+## 🎯 `response_model_exclude_unset=True`
+
+### Use Case:
+Return **only fields that were explicitly set**, **not default values**.
+
+```python
+@app.get("/items/{item_id}", response_model=Item, response_model_exclude_unset=True)
+async def read_item(item_id: str):
+    return items[item_id]
+```
+
+### Output:
+For `/items/foo`, the response will be:
+
+```json
+{
+    "name": "Foo",
+    "price": 50.2
+}
+```
+
+Why? Because `description`, `tax`, and `tags` were **not set**.
+
+For `/items/bar`, since all values are explicitly set—even if they match defaults—they're included:
+
+```json
+{
+    "name": "Bar",
+    "description": "The bartenders",
+    "price": 62,
+    "tax": 20.2
+}
+```
+
+For `/items/baz`, even though the values match the defaults (`tax=10.5`, `tags=[]`), they were **explicitly set**, so they're included.
+
+---
+
+## 🔧 `response_model_exclude_defaults=True` and `response_model_exclude_none=True`
+
+These work similarly:
+- `exclude_defaults=True`: Skips fields that match the default value
+- `exclude_none=True`: Skips fields that are `None`
+
+Example:
+
+```python
+@app.get("/items/{item_id}", response_model=Item, response_model_exclude_defaults=True)
+```
+
+---
+
+## ✂️ Include or Exclude Specific Fields
+
+### Use `response_model_include`
+Returns **only** the fields you list.
+
+```python
+@app.get(
+    "/items/{item_id}/name",
+    response_model=Item,
+    response_model_include={"name", "description"},
+)
+```
+
+Returns:
+
+```json
+{
+    "name": "Foo"
+}
+```
+
+(for item `foo`, which has no description)
+
+---
+
+### Use `response_model_exclude`
+Returns **everything except** the fields you list.
+
+```python
+@app.get("/items/{item_id}/public", response_model=Item, response_model_exclude={"tax"})
+```
+
+Returns item **without** the `tax` field.
+
+---
+
+## 💡 Syntax Note: Sets or Lists Work
+
+FastAPI will convert a list or tuple to a set internally:
+
+```python
+response_model_include=["name", "description"]  # Also works!
+```
+
+---
+
+## 🔁 Behind the Scenes
+
+- FastAPI uses `.model_dump()` (or `.dict()` in Pydantic v1) with options like:
+  - `exclude_unset`
+  - `exclude_defaults`
+  - `exclude_none`
+
+---
+
+## 🧠 Recap
+
+| Feature | Use Case | Example |
+|--------|----------|--------|
+| `response_model` | Define output shape | `response_model=Item` |
+| `response_model_exclude_unset=True` | Only return explicitly set fields | API returns only set fields |
+| `response_model_exclude_defaults=True` | Skip fields with default values | Reduce size |
+| `response_model_exclude_none=True` | Skip fields set to `None` | Clean up response |
+| `response_model_include={"name"}` | Include only specific fields | Hide others |
+| `response_model_exclude={"tax"}` | Exclude specific fields | Keep everything else |
+
+---
+
