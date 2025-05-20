@@ -1,5 +1,3 @@
----
-
 ### 🔹 What are Path Parameters?
 
 In FastAPI, **path parameters** allow you to make parts of the URL dynamic. For example:
