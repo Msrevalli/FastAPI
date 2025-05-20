@@ -1,5 +1,3 @@
----
-
 ## 🌐 What Are Query Parameters?
 
 Query parameters are part of the **URL** and are used to pass optional or additional data to your API endpoints.
