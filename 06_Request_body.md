@@ -1,5 +1,3 @@
----
-
 ## 🧾 What is a Request Body?
 
 In HTTP, a **request body** is the part of the request where the client (browser, app, etc.) sends data to the server.
