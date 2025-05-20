@@ -32,8 +32,7 @@ When you run the above app, you get:
   - ReDoc: `http://127.0.0.1:8000/redoc`
 
 ---
-
-Exactly! You nailed it 👏 FastAPI uses **Python type hints** not just for *developer support*, but also for *runtime behavior*. Let’s break down what you mentioned with real-world context and examples.
+FastAPI uses **Python type hints** not just for *developer support*, but also for *runtime behavior*. Let’s break down with real-world context and examples.
 
 ---
 
