@@ -1,4 +1,4 @@
-# **FastAPI Path Operation Advanced Configuration - Detailed Explanation**
+# **FastAPI Path Operation Advanced Configuration **
 
 FastAPI provides powerful ways to customize **path operations** (routes) beyond basic request handling. This includes controlling **OpenAPI documentation**, **request/response behavior**, and **metadata configuration**. Below is a detailed breakdown of the key advanced configurations.
 
