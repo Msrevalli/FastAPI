@@ -1,3 +1,4 @@
+### FastAPI and Typing
 The `typing` library in Python is used to provide **type hints**—a way to hint what type of data a variable, function argument, or return value is expected to have. This helps with:
 
 - Code readability
@@ -47,6 +48,4 @@ def get_name(user: Dict[str, str]) -> Optional[str]:
 | `Callable` | A function with specific arguments and return type |
 
 ---
-
-### FastAPI and Typing
 FastAPI relies heavily on the `typing` module to define request and response schemas and validate data automatically.
