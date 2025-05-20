@@ -108,9 +108,9 @@ Try `/items/?q=hello` — ✅
 Try `/items/?q=` — ✅ (returns `null`)
 Try `/items/?q=...<51 characters>` — ❌ error
 
-Here's a **condensed reference guide** to make all this easier to recall and apply in practice:
-
 ---
+
+Here's a **condensed reference guide** to make all this easier to recall and apply in practice:
 
 ## ✅ FastAPI Query Parameters — Reference & Examples
 
@@ -237,105 +237,6 @@ q: Annotated[str | None, Query(alias="item-query")] = None
 * Avoids confusion with dual defaults (`Query(default=...)` vs Python default)
 
 ---
-
-
-Here’s a consolidated and structured summary of everything you've reviewed about **FastAPI query parameter validation** using `Annotated`, `Query`, and Pydantic (v2+) features:
-
----
-
-## ✅ Basic Query Parameter Validation
-
-### Optional query parameter with length constraints:
-
-```python
-from typing import Annotated
-from fastapi import FastAPI, Query
-
-app = FastAPI()
-
-@app.get("/items/")
-async def read_items(
-    q: Annotated[str | None, Query(min_length=3, max_length=50)] = None,
-):
-    return {"q": q}
-```
-
----
-
-## ✅ Pattern Matching (Regular Expressions)
-
-### Use `pattern` instead of `regex` (new in Pydantic v2):
-
-```python
-q: Annotated[str | None, Query(pattern="^fixedquery$")] = None
-```
-
-> ⚠️ `regex` is deprecated. Use `pattern` for Pydantic v2+.
-
----
-
-## ✅ Default Values
-
-### With a default string value:
-
-```python
-q: Annotated[str, Query(min_length=3)] = "fixedquery"
-```
-
----
-
-## ✅ Required Parameters
-
-### Required and not `None`:
-
-```python
-q: Annotated[str, Query(min_length=3)]
-```
-
-### Required but allows `None`:
-
-```python
-q: Annotated[str | None, Query(min_length=3)]
-```
-
----
-
-## ✅ Multiple Query Parameters (Lists)
-
-### Multiple values in the URL (e.g., `?q=foo&q=bar`):
-
-```python
-q: Annotated[list[str] | None, Query()] = None
-```
-
-### With default list:
-
-```python
-q: Annotated[list[str], Query()] = ["foo", "bar"]
-```
-
-> ⚠️ Use `list[str]` instead of just `list` if you want type validation.
-
----
-
-## ✅ Metadata (Title, Description, Alias)
-
-```python
-q: Annotated[
-    str | None,
-    Query(
-        alias="item-query",
-        title="Query string",
-        description="Search term",
-        min_length=3,
-        max_length=50,
-        pattern="^fixedquery$"
-    )
-] = None
-```
-
----
-
 ## ✅ Deprecating a Parameter
 
 ```python
