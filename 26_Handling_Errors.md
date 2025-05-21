@@ -76,15 +76,40 @@ class UnicornException(Exception):
 Then, tell FastAPI how to handle that error:
 
 ```python
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+
+
+# ✅ Define a custom exception
+class UnicornException(Exception):
+    def __init__(self, name: str):
+        self.name = name
+
+
+app = FastAPI()
+
+
+# 🧠 Custom exception handler for UnicornException
 @app.exception_handler(UnicornException)
 async def unicorn_exception_handler(request: Request, exc: UnicornException):
     return JSONResponse(
         status_code=418,
         content={"message": f"Oops! {exc.name} did something. There goes a rainbow..."},
     )
+
+
+# 🦄 Route that may raise the custom exception
+@app.get("/unicorns/{name}")
+async def read_unicorn(name: str):
+    if name == "yolo":
+        raise UnicornException(name=name)
+    return {"unicorn_name": name}
 ```
 
-📥 Now, calling `/unicorns/yolo` raises that error and returns a **custom JSON response**.
+### How it works:
+
+* Access `/unicorns/yolo` → triggers the custom error.
+* Access `/unicorns/sparkle` → returns the unicorn name normally.
 
 ---
 
