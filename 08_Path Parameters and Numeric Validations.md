@@ -1,127 +1,221 @@
-**Path parameters with numeric validations in FastAPI**:
+## 🔹 **1. Basic Path Parameter**
 
----
+### Concept:
 
-## ✅ **1. Path Parameters with Metadata & Validation**
+A **path parameter** is part of the **URL path**, e.g. `/items/42`, where `42` is `item_id`.
 
-### ✅ Why `Path()`?
-
-* Used to validate **path parameters**, like `/items/{item_id}`
-* Similar to `Query()` but for the **URL path**
-* Always **required**
-
----
-
-### ✅ How to Use `Path()` with `Annotated` (Python 3.9+ / 3.10+)
+### Code:
 
 ```python
+from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/items/{item_id}")
+async def read_item(item_id: int):
+    return {"item_id": item_id}
+```
+
+### URL:
+
+```
+GET /items/42
+```
+
+### Output:
+
+```json
+{
+  "item_id": 42
+}
+```
+
+---
+
+## 🔹 **2. Using `Path` for Metadata (like `title`)**
+
+### Concept:
+
+Use `Path()` to add **extra information** like a title or description for documentation.
+
+### Code:
+
+```python
+from fastapi import FastAPI, Path
 from typing import Annotated
+
+app = FastAPI()
+
+@app.get("/items/{item_id}")
+async def read_item(item_id: Annotated[int, Path(title="The ID of the item to get")]):
+    return {"item_id": item_id}
+```
+
+### Benefit:
+
+* Adds a **title** to the path parameter in the **API docs** (`/docs`).
+
+---
+
+## 🔹 **3. Query Parameter with `Query` and Alias**
+
+### Concept:
+
+Query parameters are passed like `?q=value`. Use `Query()` to customize behavior (e.g., alias).
+
+### Code:
+
+```python
+from fastapi import FastAPI, Query
+from typing import Annotated
+
+app = FastAPI()
+
+@app.get("/items/")
+async def read_items(q: Annotated[str | None, Query(alias="item-query")] = None):
+    return {"q": q}
+```
+
+### URL:
+
+```
+GET /items/?item-query=search_text
+```
+
+### Output:
+
+```json
+{
+  "q": "search_text"
+}
+```
+
+---
+
+## 🔹 **4. Numeric Validation in Path Parameter: `ge` (greater than or equal)**
+
+### Concept:
+
+Use `ge=1` to ensure the number is **greater than or equal to 1**.
+
+### Code:
+
+```python
+from fastapi import FastAPI, Path
+from typing import Annotated
+
+app = FastAPI()
+
+@app.get("/items/{item_id}")
+async def read_item(
+    item_id: Annotated[int, Path(ge=1, title="The ID must be >= 1")]
+):
+    return {"item_id": item_id}
+```
+
+### Invalid Request:
+
+```
+GET /items/0 → 422 Unprocessable Entity
+```
+
+---
+
+## 🔹 **5. Numeric Validation: `gt`, `le` (greater than, less than or equal)**
+
+### Concept:
+
+Set both upper and lower bounds for an integer.
+
+### Code:
+
+```python
+from fastapi import FastAPI, Path
+from typing import Annotated
+
+app = FastAPI()
+
+@app.get("/items/{item_id}")
+async def read_item(
+    item_id: Annotated[int, Path(gt=0, le=1000)]
+):
+    return {"item_id": item_id}
+```
+
+* Accepts values between `1` and `1000` (not `0`, not `1001`)
+
+---
+
+## 🔹 **6. Float Validation with `Query`**
+
+### Concept:
+
+Validating float query parameters with greater-than and less-than.
+
+### Code:
+
+```python
+from fastapi import FastAPI, Path, Query
+from typing import Annotated
+
+app = FastAPI()
+
+@app.get("/items/{item_id}")
+async def read_item(
+    item_id: Annotated[int, Path(ge=0, le=1000)],
+    size: Annotated[float, Query(gt=0, lt=10.5)]
+):
+    return {"item_id": item_id, "size": size}
+```
+
+### URL:
+
+```
+GET /items/5?size=5.3 → ✅
+GET /items/5?size=0 → ❌ (gt > 0 fails)
+GET /items/5?size=11 → ❌ (lt < 10.5 fails)
+```
+
+---
+
+## 🔹 **7. Using `*` to Force Keyword-Only Arguments (non-Annotated)**
+
+### Concept:
+
+In Python, use `*` in the function to make all parameters **keyword-only**, even if they don't have defaults.
+
+### Code:
+
+```python
 from fastapi import FastAPI, Path
 
 app = FastAPI()
 
 @app.get("/items/{item_id}")
-async def read_items(
-    item_id: Annotated[int, Path(title="The ID of the item to get")]
+async def read_item(
+    *, item_id: int = Path(title="The ID"), q: str
 ):
-    return {"item_id": item_id}
+    return {"item_id": item_id, "q": q}
 ```
 
-✅ Path parameter `item_id`:
+### URL:
 
-* Must be present in URL
-* Must be an `int`
-* Will show title in the OpenAPI docs
+```
+GET /items/10?q=hello
+```
+
+✅ This allows `q` to be required, without changing the parameter order.
 
 ---
 
-## 📏 **2. Numeric Validations with `Path()`**
+## 🔹 **8. Recap: Validation Keywords**
 
-### Greater than or equal to (ge):
-
-```python
-item_id: Annotated[int, Path(ge=1)]
-```
-
-* Must be `≥ 1`
-
-### Greater than (gt) and Less than or equal (le):
-
-```python
-item_id: Annotated[int, Path(gt=0, le=1000)]
-```
-
-* Must be `> 0` and `≤ 1000`
-
-### Float validation with `Query()`:
-
-```python
-size: Annotated[float, Query(gt=0, lt=10.5)]
-```
-
-* Must be a float `> 0` and `< 10.5`
-
----
-
-## 🔄 **3. Annotated vs Non-Annotated Syntax**
-
-### ✅ Preferred: Using `Annotated`
-
-```python
-@app.get("/items/{item_id}")
-async def read_items(
-    item_id: Annotated[int, Path(title="ID", ge=1)],
-    q: Annotated[str | None, Query(alias="item-query")] = None,
-):
-    ...
-```
-
-### 🔁 Still works: Non-Annotated (Python 3.8+)
-
-```python
-@app.get("/items/{item_id}")
-async def read_items(q: str, item_id: int = Path(title="ID")):
-    ...
-```
-
-📌 But this forces you to reorder parameters to avoid Python errors (non-default before default).
-
----
-
-## 🛠️ **4. Forcing Keyword-Only Parameters with `*`**
-
-```python
-@app.get("/items/{item_id}")
-async def read_items(
-    *, item_id: int = Path(title="ID"), q: str
-):
-    ...
-```
-
-✅ Use `*` to force all arguments to be passed by keyword.
-✅ Avoids reordering hassle in non-Annotated syntax.
-
----
-
-## 📘 Recap: Path vs Query
-
-| Feature            | `Path()`                              | `Query()`            |
-| ------------------ | ------------------------------------- | -------------------- |
-| Used for           | URL path parameters                   | URL query parameters |
-| Required?          | Always required                       | Optional by default  |
-| Validations        | `gt`, `ge`, `lt`, `le`, `title`, etc. | Same                 |
-| Preferred Syntax   | `Annotated` (Python 3.9+/3.10+)       | Same                 |
-| Keyword-only trick | Use `*` in function signature         | Same applies         |
-
----
-
-## 💡 Extra: Why use `Path()` and `Query()` at all?
-
-Because they allow:
-
-* **Validation** (e.g., only accept values between 1 and 1000)
-* **Metadata** (e.g., descriptions/titles in OpenAPI docs)
-* **Alias naming** (e.g., use a different external param name)
+| Validation | Meaning               | Example                  |
+| ---------- | --------------------- | ------------------------ |
+| `gt`       | Greater than          | `gt=0` → value > 0       |
+| `ge`       | Greater than or equal | `ge=1` → value ≥ 1       |
+| `lt`       | Less than             | `lt=100` → value < 100   |
+| `le`       | Less than or equal    | `le=1000` → value ≤ 1000 |
 
 ---
 
