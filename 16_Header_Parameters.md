@@ -1,4 +1,4 @@
-#### **header parameters** are used to extract data from the HTTP **headers** of incoming requests.
+#### **Header parameters** are used to extract data from the HTTP **headers** of incoming requests.
 
 These are often used for:
 
