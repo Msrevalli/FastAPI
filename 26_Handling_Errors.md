@@ -145,6 +145,42 @@ async def http_exception_handler(request, exc):
 
 ---
 
+```python
+from fastapi import FastAPI, HTTPException
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import PlainTextResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+app = FastAPI()
+
+
+# 🛠️ Handle standard HTTP exceptions
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request, exc):
+    return PlainTextResponse(str(exc.detail), status_code=exc.status_code)
+
+
+# 🧼 Handle validation errors (e.g., invalid query/path/body data)
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    return PlainTextResponse(str(exc), status_code=400)
+
+
+# 🔍 Route that raises a custom error when item_id is 3
+@app.get("/items/{item_id}")
+async def read_item(item_id: int):
+    if item_id == 3:
+        raise HTTPException(status_code=418, detail="Nope! I don't like 3.")
+    return {"item_id": item_id}
+```
+
+### Behavior:
+
+* ✅ `/items/1` → returns `{"item_id": 1}`
+* ❌ `/items/foo` → triggers `RequestValidationError`, returns plain text
+* ❌ `/items/3` → triggers custom 418 error with message `"Nope! I don't like 3."`
+
+
 ## 🧪 Debugging: See What the Client Sent
 
 Useful when you want to **see and return exactly what the user sent**:
