@@ -1,8 +1,13 @@
-### ✅ **1. Examples via Pydantic Model Config (JSON Schema Extra)**
+## ✅ **1. Model-Level Example via `model_config` (`json_schema_extra`)**
 
-**Best for:** Global model-level examples (shown in docs and OpenAPI schema)
+### 🔧 Code
 
 ```python
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI()
+
 class Item(BaseModel):
     name: str
     description: str | None = None
@@ -21,33 +26,77 @@ class Item(BaseModel):
             ]
         }
     }
+
+@app.post("/items/")
+async def create_item(item: Item):
+    return item
+```
+
+### 📤 Example Request (JSON)
+
+```json
+{
+  "name": "Foo",
+  "description": "A very nice Item",
+  "price": 35.4,
+  "tax": 3.2
+}
 ```
 
 ---
 
-### ✅ **2. Examples via `Field()`**
+## ✅ **2. Field-Level Examples via `Field(examples=[...])`**
 
-**Best for:** Field-level examples
+### 🔧 Code
 
 ```python
+from fastapi import FastAPI
 from pydantic import BaseModel, Field
+
+app = FastAPI()
 
 class Item(BaseModel):
     name: str = Field(examples=["Foo"])
     description: str | None = Field(default=None, examples=["A very nice Item"])
     price: float = Field(examples=[35.4])
     tax: float | None = Field(default=None, examples=[3.2])
+
+@app.post("/items/")
+async def create_item(item: Item):
+    return item
+```
+
+### 📤 Example Request (JSON)
+
+Same as above. These examples are shown **per field** in the docs:
+
+```json
+{
+  "name": "Foo",
+  "description": "A very nice Item",
+  "price": 35.4,
+  "tax": 3.2
+}
 ```
 
 ---
 
-### ✅ **3. Examples via `Body(examples=...)`**
+## ✅ **3. Body-Level Examples via `Body(examples=[...])`**
 
-**Best for:** Parameter-level examples for a request body
+### 🔧 Code
 
 ```python
+from fastapi import FastAPI, Body
+from pydantic import BaseModel
 from typing import Annotated
-from fastapi import Body
+
+app = FastAPI()
+
+class Item(BaseModel):
+    name: str
+    description: str | None = None
+    price: float
+    tax: float | None = None
 
 @app.put("/items/{item_id}")
 async def update_item(
@@ -66,67 +115,134 @@ async def update_item(
         )
     ]
 ):
-    ...
+    return {"item_id": item_id, "item": item}
+```
+
+### 📤 Example Request (JSON)
+
+```json
+{
+  "name": "Foo",
+  "description": "A very nice Item",
+  "price": 35.4,
+  "tax": 3.2
+}
 ```
 
 ---
 
-### ✅ **4. Multiple Body Examples using `Body(examples=[...])`**
+## ✅ **4. Multiple Body Examples via `Body(examples=[...])`**
 
-**Best for:** Demonstrating good, invalid, or alternative examples
+### 🔧 Code
 
 ```python
-item: Annotated[
-    Item,
-    Body(
-        examples=[
-            {"name": "Foo", "description": "Nice", "price": 35.4, "tax": 3.2},
-            {"name": "Bar", "price": "35.4"},  # Auto conversion
-            {"name": "Baz", "price": "thirty five"},  # Invalid
-        ]
-    )
-]
+@app.put("/items/{item_id}/multi")
+async def update_item_multi_example(
+    item_id: int,
+    item: Annotated[
+        Item,
+        Body(
+            examples=[
+                {"name": "Foo", "description": "Nice", "price": 35.4, "tax": 3.2},
+                {"name": "Bar", "price": "35.4"},  # Auto converted
+                {"name": "Baz", "price": "thirty five"}  # Invalid
+            ]
+        )
+    ]
+):
+    return {"item_id": item_id, "item": item}
+```
+
+### 📤 Example Requests (JSON)
+
+✅ Valid:
+
+```json
+{
+  "name": "Foo",
+  "description": "Nice",
+  "price": 35.4,
+  "tax": 3.2
+}
+```
+
+✅ Valid with auto-type conversion:
+
+```json
+{
+  "name": "Bar",
+  "price": "35.4"
+}
+```
+
+❌ Invalid:
+
+```json
+{
+  "name": "Baz",
+  "price": "thirty five"
+}
 ```
 
 ---
 
-### ✅ **5. OpenAPI-Specific Examples via `openapi_examples`**
+## ✅ **5. Named Examples via `openapi_examples`**
 
-**Best for:** Adding detailed, named examples with descriptions in the Swagger UI
+### 🔧 Code
 
 ```python
-item: Annotated[
-    Item,
-    Body(
-        openapi_examples={
-            "normal": {
-                "summary": "A normal example",
-                "description": "A **normal** item",
-                "value": {
-                    "name": "Foo",
-                    "description": "A very nice Item",
-                    "price": 35.4,
-                    "tax": 3.2,
+@app.put("/items/{item_id}/named")
+async def update_item_named_examples(
+    item_id: int,
+    item: Annotated[
+        Item,
+        Body(
+            openapi_examples={
+                "normal": {
+                    "summary": "A normal example",
+                    "description": "A **normal** item",
+                    "value": {
+                        "name": "Foo",
+                        "description": "A very nice Item",
+                        "price": 35.4,
+                        "tax": 3.2,
+                    },
                 },
-            },
-            "converted": {
-                "summary": "String price auto-converts",
-                "value": {"name": "Bar", "price": "35.4"},
-            },
-            "invalid": {
-                "summary": "Invalid price",
-                "value": {"name": "Baz", "price": "thirty five"},
-            },
-        }
-    )
-]
+                "converted": {
+                    "summary": "String price auto-converts",
+                    "value": {"name": "Bar", "price": "35.4"},
+                },
+                "invalid": {
+                    "summary": "Invalid price",
+                    "value": {"name": "Baz", "price": "thirty five"},
+                },
+            }
+        )
+    ]
+):
+    return {"item_id": item_id, "item": item}
+```
+
+### 📤 Example Request (Valid: `normal`)
+
+```json
+{
+  "name": "Foo",
+  "description": "A very nice Item",
+  "price": 35.4,
+  "tax": 3.2
+}
+```
+
+### 📤 Example Request (Invalid)
+
+```json
+{
+  "name": "Baz",
+  "price": "thirty five"
+}
 ```
 
 ---
 
-### ⚙️ Version Notes
 
-- **Use FastAPI ≥ 0.99.0** to benefit from OpenAPI 3.1 and JSON Schema `examples`.
-- **Use FastAPI ≥ 0.103.0** to use `openapi_examples`.
-
----
