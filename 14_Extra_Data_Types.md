@@ -1,38 +1,47 @@
-
-### ✅ **Why and When to Use These Extra Types**
-
-| **Data Type**       | **Use Case**                                                                                   | **FastAPI Conversion**                     |
-|---------------------|------------------------------------------------------------------------------------------------|--------------------------------------------|
-| `UUID`              | Unique resource identifiers (e.g., user ID, product ID). Safe for distributed systems.         | Comes in as `str`, auto-converted to `UUID`|
-| `datetime.datetime` | Timestamps for events (e.g., order created at, updated at).                                     | ISO 8601 string → `datetime` object        |
-| `datetime.date`     | Just a calendar date, no time (e.g., date of birth).                                           | ISO string → `date`                        |
-| `datetime.time`     | Specific times (e.g., repeat reminder time, alarm time).                                       | ISO string → `time`                        |
-| `datetime.timedelta`| Time intervals (e.g., delay processing for X minutes).                                         | ISO string or float → `timedelta`          |
-| `bytes`             | Raw binary data (e.g., files, images).                                                         | Comes as `str`, interpreted as base64      |
-| `Decimal`           | Precise numbers (e.g., money, scientific calculations).                                        | Like float, but avoids rounding issues     |
-| `frozenset`         | Unique, immutable sets (e.g., unique tags).                                                    | List in, set conversion + uniqueness       |
+**Extra Data Types** supported by FastAPI/Pydantic — 
 
 ---
 
-### ✅ Example Breakdown (Refresher)
+### Extra Data Types Supported
 
-Here’s the example code again with inline comments to explain what’s going on:
+| Type                   | Python Type          | JSON / OpenAPI Representation                                                            |
+| ---------------------- | -------------------- | ---------------------------------------------------------------------------------------- |
+| **UUID**               | `uuid.UUID`          | String UUID (e.g., `"3fa85f64-5717-4562-b3fc-2c963f66afa6"`)                             |
+| **datetime.datetime**  | `datetime.datetime`  | ISO 8601 datetime string (e.g., `"2008-09-15T15:53:00+05:00"`)                           |
+| **datetime.date**      | `datetime.date`      | ISO 8601 date string (e.g., `"2008-09-15"`)                                              |
+| **datetime.time**      | `datetime.time`      | ISO 8601 time string (e.g., `"14:23:55.003"`)                                            |
+| **datetime.timedelta** | `datetime.timedelta` | Float representing total seconds (e.g., `3600.0`) or ISO 8601 duration string (advanced) |
+| **frozenset**          | `frozenset`          | List of unique items (duplicates removed)                                                |
+| **bytes**              | `bytes`              | Base64-encoded string, treated as `str` with binary format                               |
+| **Decimal**            | `decimal.Decimal`    | Treated as `float` in JSON                                                               |
 
+---
+
+### Why use these?
+
+* **Validation:** Incoming data is automatically validated and converted.
+* **Editor support:** Autocompletion and type hints.
+* **OpenAPI docs:** Proper schema and example generation.
+* **Automatic serialization:** Returned data is converted correctly.
+
+---
 ```python
 from datetime import datetime, time, timedelta
 from typing import Annotated
 from uuid import UUID
+
 from fastapi import Body, FastAPI
 
 app = FastAPI()
 
+
 @app.put("/items/{item_id}")
 async def read_items(
-    item_id: UUID,  # Accepts UUID string like "123e4567-e89b-12d3-a456-426614174000"
-    start_datetime: Annotated[datetime, Body()],  # Accepts "2025-04-12T15:00:00"
+    item_id: UUID,
+    start_datetime: Annotated[datetime, Body()],
     end_datetime: Annotated[datetime, Body()],
-    process_after: Annotated[timedelta, Body()],  # Accepts duration like "PT30M"
-    repeat_at: Annotated[time | None, Body()] = None  # Optional, time like "14:23:55"
+    process_after: Annotated[timedelta, Body()],
+    repeat_at: Annotated[time | None, Body()] = None,
 ):
     start_process = start_datetime + process_after
     duration = end_datetime - start_process
@@ -49,11 +58,44 @@ async def read_items(
 
 ---
 
-### 💡 Tips
+### 🌐 Example Request URL
 
-- Use these types in models too, not just function parameters.
-- Use `datetime` for anything time-sensitive — it'll save you from timezone bugs and string manipulation.
-- Use `UUID` over `int`/`str` IDs for better security and uniqueness.
-- Use `Decimal` for financial values to avoid float rounding issues.
+```
+PUT /items/3fa85f64-5717-4562-b3fc-2c963f66afa6
+```
 
 ---
+
+### 📦 Example JSON Request Body
+
+```json
+{
+  "start_datetime": "2025-05-21T10:00:00",
+  "end_datetime": "2025-05-21T12:00:00",
+  "process_after": 600.0,
+  "repeat_at": "14:00:00"
+}
+```
+
+* `start_datetime` and `end_datetime`: ISO 8601 datetime strings.
+* `process_after`: a `timedelta` in **seconds** (600 seconds = 10 minutes).
+* `repeat_at`: a `time` value in `HH:MM:SS` format.
+
+---
+
+### 🧠 Explanation of Extra Types
+
+| Type        | Python Type          | JSON Format                              |
+| ----------- | -------------------- | ---------------------------------------- |
+| `UUID`      | `uuid.UUID`          | `"3fa85f64-5717-4562-b3fc-2c963f66afa6"` |
+| `datetime`  | `datetime.datetime`  | `"2025-05-21T10:00:00"`                  |
+| `date`      | `datetime.date`      | `"2025-05-21"`                           |
+| `time`      | `datetime.time`      | `"14:00:00"`                             |
+| `timedelta` | `datetime.timedelta` | `600.0` (seconds as float)               |
+| `frozenset` | `frozenset`          | List, converted to set                   |
+| `bytes`     | `bytes`              | Base64 string / binary format            |
+| `Decimal`   | `decimal.Decimal`    | Treated like `float`                     |
+
+---
+
+

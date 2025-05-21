@@ -394,7 +394,7 @@ Here's a detailed explanation of the **differences between the 5 types of exampl
 
 ---
 
-Yes, FastAPI allows you to enhance **OpenAPI documentation** by adding **examples** to parameters like:
+FastAPI allows you to enhance **OpenAPI documentation** by adding **examples** to parameters like:
 
 * `Path()`
 * `Query()`
