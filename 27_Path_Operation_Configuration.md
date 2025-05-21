@@ -196,6 +196,57 @@ async def read_users():
 
 ---
 
+Script with the enum-based tags — and an example of how the tags work:
+
+```python
+from enum import Enum
+
+from fastapi import FastAPI
+
+app = FastAPI()
+
+
+class Tags(Enum):
+    items = "items"
+    users = "users"
+
+
+@app.get("/items/", tags=[Tags.items])
+async def get_items():
+    return ["Portal gun", "Plumbus"]
+
+
+@app.get("/users/", tags=[Tags.users])
+async def read_users():
+    return ["Rick", "Morty"]
+```
+
+### How Tags Work Here:
+
+* The `Tags` enum defines tag names.
+* You use these enum members in your route decorator’s `tags` list.
+* This adds the tags to your OpenAPI docs grouping, making the docs clearer and easier to maintain.
+
+---
+
+### Example responses:
+
+**GET /items/**
+
+```json
+["Portal gun", "Plumbus"]
+```
+
+**GET /users/**
+
+```json
+["Rick", "Morty"]
+```
+
+---
+
+If you open your FastAPI Swagger UI (`/docs`), you'll see the endpoints grouped under "items" and "users" based on those tags.
+
 ### ✅ **3. `summary` and `description`**
 Provide metadata for docs. Use for clearer OpenAPI docs.
 
