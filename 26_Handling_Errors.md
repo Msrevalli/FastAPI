@@ -1,15 +1,26 @@
+## ⚠️ When Should You Handle Errors?
+
+You send an error when the client:
+
+1. 🔐 **Is not allowed** to do something
+   *E.g., trying to access admin-only data.*
+
+2. 🔍 **Requests something that doesn’t exist**
+   *E.g., `GET /items/999` but item 999 isn’t in your database.*
+
+3. ❌ **Sends bad data**
+   *E.g., they send a string when a number is expected.*
+
+4. 📜 **Breaks your rules**
+   *E.g., you reject all orders containing the number 3.*
+
 ---
 
-## ⚠️ When to Handle Errors
-You’ll want to send an error response to the client when:
-- 🔐 They don’t have permission
-- 🔍 They ask for something that doesn’t exist
-- ❌ They send invalid data
-- 📜 You want to enforce business logic (e.g. “I don’t like 3” 😄)
+## 🧱 Basic Error with `HTTPException`
 
----
+FastAPI’s built-in way to raise standard HTTP errors.
 
-## 🧱 Basic Error: `HTTPException`
+### 🧪 Example
 
 ```python
 from fastapi import FastAPI, HTTPException
@@ -25,13 +36,16 @@ async def read_item(item_id: str):
     return {"item": items[item_id]}
 ```
 
-### 🧾 Response
-- ✅ `/items/foo` → 200 + item data
-- ❌ `/items/bar` → 404 + `{ "detail": "Item not found" }`
+### 🧾 Result:
+
+* ✅ `/items/foo` → `200 OK`, returns item
+* ❌ `/items/bar` → `404 Not Found`, returns `{ "detail": "Item not found" }`
 
 ---
 
-## 🛠️ Add Custom Headers to Error
+## 🛠️ Add Custom Headers to the Error Response
+
+You can attach headers to your error:
 
 ```python
 raise HTTPException(
@@ -41,39 +55,49 @@ raise HTTPException(
 )
 ```
 
+🧾 The client receives:
+
+```http
+X-Error: There goes my error
+```
+
 ---
 
-## 🦄 Custom Exception Handling
+## 🦄 Custom Exception Class
+
+You can define your **own error types** for unique cases.
 
 ```python
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
-
 class UnicornException(Exception):
     def __init__(self, name: str):
         self.name = name
+```
 
-app = FastAPI()
+Then, tell FastAPI how to handle that error:
 
+```python
 @app.exception_handler(UnicornException)
 async def unicorn_exception_handler(request: Request, exc: UnicornException):
     return JSONResponse(
         status_code=418,
         content={"message": f"Oops! {exc.name} did something. There goes a rainbow..."},
     )
-
-@app.get("/unicorns/{name}")
-async def read_unicorn(name: str):
-    if name == "yolo":
-        raise UnicornException(name=name)
-    return {"unicorn_name": name}
 ```
+
+📥 Now, calling `/unicorns/yolo` raises that error and returns a **custom JSON response**.
 
 ---
 
 ## 🧼 Customizing FastAPI’s Built-in Error Handlers
 
-### Handle invalid path/query/body (`RequestValidationError`)
+FastAPI auto-validates data. If a request fails validation, it raises:
+
+* `RequestValidationError`
+* `StarletteHTTPException`
+
+You can catch and customize those:
+
+### 🔧 Validation Errors (like bad query/body/path data)
 
 ```python
 from fastapi.exceptions import RequestValidationError
@@ -84,7 +108,7 @@ async def validation_exception_handler(request, exc):
     return PlainTextResponse(str(exc), status_code=400)
 ```
 
-### Handle all HTTP errors (`StarletteHTTPException`)
+### 🔧 All HTTP Errors
 
 ```python
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -96,7 +120,9 @@ async def http_exception_handler(request, exc):
 
 ---
 
-## 🧪 Bonus: See What the Client Sent (for debugging)
+## 🧪 Debugging: See What the Client Sent
+
+Useful when you want to **see and return exactly what the user sent**:
 
 ```python
 from fastapi.encoders import jsonable_encoder
@@ -114,7 +140,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 ---
 
-## 🔁 Reuse FastAPI's Built-In Handlers
+## 🔁 Reuse Built-in Handlers (with logging)
 
 ```python
 from fastapi.exception_handlers import (
@@ -124,24 +150,25 @@ from fastapi.exception_handlers import (
 
 @app.exception_handler(StarletteHTTPException)
 async def custom_http_exception_handler(request, exc):
-    print(f"OMG! An HTTP error!: {repr(exc)}")
+    print(f"HTTP error: {repr(exc)}")
     return await http_exception_handler(request, exc)
 
 @app.exception_handler(RequestValidationError)
 async def custom_validation_exception_handler(request, exc):
-    print(f"OMG! Client sent bad data: {exc}")
+    print(f"Validation error: {exc}")
     return await request_validation_exception_handler(request, exc)
 ```
 
 ---
 
-## 🚨 `FastAPI.HTTPException` vs `Starlette.HTTPException`
+## 🚨 FastAPI vs Starlette HTTPException
 
-| Feature                      | FastAPI version                          | Starlette version                         |
-|-----------------------------|------------------------------------------|-------------------------------------------|
-| Accepts JSON for `detail`   | ✅ Yes                                    | ❌ Only strings                            |
-| Raise this in your code     | ✅ Use FastAPI’s `HTTPException`         |                                           |
-| Catch with custom handler   | ✅ Use `StarletteHTTPException` in `@app.exception_handler(...)` |
+| Feature                         | `FastAPI.HTTPException` | `Starlette.HTTPException`      |
+| ------------------------------- | ----------------------- | ------------------------------ |
+| Can return JSON `detail`        | ✅ Yes                   | ❌ Only strings                 |
+| You raise in your routes        | ✅                       | ❌ (not typical)                |
+| You catch in exception handlers | ✅ (indirectly)          | ✅ (used by FastAPI internally) |
 
 ---
+
 
