@@ -103,6 +103,96 @@ class Tags(Enum):
 
 @app.get("/users/", tags=[Tags.users])
 ```
+```python
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI()
+
+
+class Item(BaseModel):
+    name: str
+    description: str | None = None
+    price: float
+    tax: float | None = None
+    tags: set[str] = set()
+
+
+@app.post("/items/", response_model=Item, tags=["items"])
+async def create_item(item: Item):
+    return item
+
+
+@app.get("/items/", tags=["items"])
+async def read_items():
+    return [{"name": "Foo", "price": 42}]
+
+
+@app.get("/users/", tags=["users"])
+async def read_users():
+    return [{"username": "johndoe"}]
+```
+
+### 🔍 What this does:
+
+* `tags=["items"]` groups `/items/` endpoints together in the **Swagger UI**.
+* `tags=["users"]` separates `/users/` under a different section.
+
+---
+### ✅ `POST /items/`
+
+**Request Body:**
+
+```json
+{
+  "name": "Laptop",
+  "description": "A powerful machine",
+  "price": 1500.99,
+  "tax": 100.00,
+  "tags": ["electronics", "computers"]
+}
+```
+
+**Response:**
+
+```json
+{
+  "name": "Laptop",
+  "description": "A powerful machine",
+  "price": 1500.99,
+  "tax": 100.0,
+  "tags": ["electronics", "computers"]
+}
+```
+
+---
+
+### ✅ `GET /items/`
+
+**Response:**
+
+```json
+[
+  {
+    "name": "Foo",
+    "price": 42
+  }
+]
+```
+
+---
+
+### ✅ `GET /users/`
+
+**Response:**
+
+```json
+[
+  {
+    "username": "johndoe"
+  }
+]
+```
 
 ---
 
