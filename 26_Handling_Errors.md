@@ -180,45 +180,164 @@ async def read_item(item_id: int):
 * ❌ `/items/foo` → triggers `RequestValidationError`, returns plain text
 * ❌ `/items/3` → triggers custom 418 error with message `"Nope! I don't like 3."`
 
+Your FastAPI script is clean and handles validation errors in a customized way. Here's the breakdown:
 
-## 🧪 Debugging: See What the Client Sent
-
-Useful when you want to **see and return exactly what the user sent**:
+---
 
 ```python
+from fastapi import FastAPI, Request, status
 from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
+app = FastAPI()
+
+# 🧼 Custom validation error handler
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
-        status_code=422,
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content=jsonable_encoder({
             "detail": exc.errors(),
             "body": exc.body
         }),
     )
+
+# 📦 Pydantic model for input
+class Item(BaseModel):
+    title: str
+    size: int
+
+# 📥 POST endpoint
+@app.post("/items/")
+async def create_item(item: Item):
+    return item
 ```
 
 ---
 
-## 🔁 Reuse Built-in Handlers (with logging)
+### 🔍 How it Works:
 
+* **`Item` model** requires:
+
+  * `title`: `str`
+  * `size`: `int`
+
+* When a client sends invalid data (e.g., wrong types or missing fields), your custom handler returns a JSON response showing:
+
+  * Detailed error messages (`exc.errors()`)
+  * The full body the client tried to send (`exc.body`)
+
+---
+
+### ✅ Example Success Request:
+
+**Request:**
+
+```json
+POST /items/
+{
+  "title": "T-Shirt",
+  "size": 42
+}
+```
+
+**Response:**
+
+```json
+{
+  "title": "T-Shirt",
+  "size": 42
+}
+```
+
+---
+
+### ❌ Example Error Request:
+
+**Request:**
+
+```json
+POST /items/
+{
+  "title": 123,
+  "size": "big"
+}
+```
+
+**Response:**
+
+```json
+{
+  "detail": [
+    {
+      "loc": ["body", "title"],
+      "msg": "str type expected",
+      "type": "type_error.str"
+    },
+    {
+      "loc": ["body", "size"],
+      "msg": "value is not a valid integer",
+      "type": "type_error.integer"
+    }
+  ],
+  "body": {
+    "title": 123,
+    "size": "big"
+  }
+}
+```
+---
 ```python
+from fastapi import FastAPI, HTTPException
 from fastapi.exception_handlers import (
     http_exception_handler,
     request_validation_exception_handler,
 )
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
+app = FastAPI()
+
+# 🔁 Custom HTTP error handler (reuses FastAPI's built-in handler with extra logging)
 @app.exception_handler(StarletteHTTPException)
 async def custom_http_exception_handler(request, exc):
-    print(f"HTTP error: {repr(exc)}")
+    print(f"OMG! An HTTP error!: {repr(exc)}")
     return await http_exception_handler(request, exc)
 
+# 🔁 Custom validation error handler (also logs before reusing FastAPI handler)
 @app.exception_handler(RequestValidationError)
-async def custom_validation_exception_handler(request, exc):
-    print(f"Validation error: {exc}")
+async def validation_exception_handler(request, exc):
+    print(f"OMG! The client sent invalid data!: {exc}")
     return await request_validation_exception_handler(request, exc)
+
+# 🧪 Simple route to trigger errors
+@app.get("/items/{item_id}")
+async def read_item(item_id: int):
+    if item_id == 3:
+        raise HTTPException(status_code=418, detail="Nope! I don't like 3.")
+    return {"item_id": item_id}
 ```
+
+---
+
+### 🔍 Behavior
+
+* `/items/2` → ✅ Returns `{ "item_id": 2 }`
+* `/items/abc` → ❌ Triggers `RequestValidationError` (logs + returns 422)
+* `/items/3` → ❌ Triggers `HTTPException` with 418 "I'm a teapot" (logs + returns 418)
+
+---
+
+### 🧠 Key Concepts
+
+| Feature                                      | Purpose                                                                |
+| -------------------------------------------- | ---------------------------------------------------------------------- |
+| `@exception_handler(StarletteHTTPException)` | Handles **all HTTP errors** (like 404, 418) and logs them              |
+| `@exception_handler(RequestValidationError)` | Handles **invalid input** (e.g., wrong data types, missing fields)     |
+| `await http_exception_handler(...)`          | Delegates actual formatting to FastAPI's default behavior              |
+| `print(...)`                                 | Adds custom logging — helpful for debugging or logging to a file later |
 
 ---
 
