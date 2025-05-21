@@ -11,6 +11,78 @@ async def create_item(item: Item):
 
 🔹 You can use raw integers like `201`, but `status.HTTP_201_CREATED` is more descriptive and readable.
 
+```python
+from fastapi import FastAPI, status
+from pydantic import BaseModel
+
+app = FastAPI()
+
+
+class Item(BaseModel):
+    name: str
+    description: str | None = None
+    price: float
+    tax: float | None = None
+    tags: set[str] = set()
+
+
+@app.post("/items/", response_model=Item, status_code=status.HTTP_201_CREATED)
+async def create_item(item: Item):
+    return item
+```
+* **Declares a Pydantic model `Item`** with several fields:
+
+  * `name`: required `str`
+  * `description`: optional `str`
+  * `price`: required `float`
+  * `tax`: optional `float`
+  * `tags`: set of `str`, default empty
+* **Creates a POST endpoint** at `/items/`:
+
+  * **Accepts a request body** matching the `Item` model.
+  * **Returns the same item as the response**, using `response_model=Item`.
+  * **Sets HTTP status code 201 (Created)** for success.
+
+---
+
+### 🧾 **Example Request**
+
+**POST** `/items/`
+
+```json
+{
+  "name": "Laptop",
+  "description": "Fast and light",
+  "price": 999.99,
+  "tax": 89.99,
+  "tags": ["electronics", "computers"]
+}
+```
+
+### ✅ **Response**
+
+```json
+{
+  "name": "Laptop",
+  "description": "Fast and light",
+  "price": 999.99,
+  "tax": 89.99,
+  "tags": ["computers", "electronics"]  // Set may reorder
+}
+```
+
+---
+
+### 🧠 Key Concepts
+
+| Feature                 | Explanation                                                            |                                                      |
+| ----------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------- |
+| `BaseModel` (Pydantic)  | Used to define request and response data schemas                       |                                                      |
+| `response_model=Item`   | Ensures consistent response output (includes validation + filtering)   |                                                      |
+| `status_code=201`       | Tells FastAPI to return HTTP 201 Created instead of the default 200 OK |                                                      |
+| `set[str]` in `tags`    | Ensures tags are unique (e.g., `["a", "a", "b"]` becomes `["a", "b"]`) |                                                      |
+| Optional fields with \` | None\`                                                                 | Make the field optional in both request and response |
+
 ---
 
 ### ✅ **2. `tags`**
