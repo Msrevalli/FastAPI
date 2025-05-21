@@ -394,4 +394,159 @@ Here's a detailed explanation of the **differences between the 5 types of exampl
 
 ---
 
+Yes, FastAPI allows you to enhance **OpenAPI documentation** by adding **examples** to parameters like:
+
+* `Path()`
+* `Query()`
+* `Header()`
+* `Cookie()`
+* `Body()`
+* `Form()`
+* `File()`
+
+These examples help users of the API understand what input is expected and are displayed in the **Swagger UI** (`/docs`).
+
+---
+
+### ✅ **Examples with `Query()`**
+
+```python
+from fastapi import FastAPI, Query
+
+app = FastAPI()
+
+@app.get("/items/")
+async def read_items(
+    q: str = Query(
+        default=None,
+        examples={
+            "normal": {
+                "summary": "A typical query",
+                "description": "A common search query",
+                "value": "apple",
+            },
+            "empty": {
+                "summary": "Empty query",
+                "description": "No search term provided",
+                "value": "",
+            },
+        },
+    )
+):
+    return {"q": q}
+```
+
+---
+
+### ✅ **Examples with `Path()`**
+
+```python
+from fastapi import FastAPI, Path
+
+app = FastAPI()
+
+@app.get("/items/{item_id}")
+async def read_item(
+    item_id: int = Path(
+        ...,
+        examples={
+            "example1": {
+                "summary": "A valid item ID",
+                "value": 123,
+            }
+        },
+    )
+):
+    return {"item_id": item_id}
+```
+
+---
+
+### ✅ **Examples with `Header()`**
+
+```python
+from fastapi import FastAPI, Header
+
+app = FastAPI()
+
+@app.get("/header-example/")
+async def get_header(
+    user_agent: str = Header(
+        ...,
+        examples={
+            "browser": {
+                "summary": "Chrome",
+                "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+            }
+        },
+    )
+):
+    return {"User-Agent": user_agent}
+```
+
+---
+
+### ✅ **Examples with `Form()`**
+
+```python
+from fastapi import FastAPI, Form
+
+app = FastAPI()
+
+@app.post("/login/")
+async def login(
+    username: str = Form(
+        ..., 
+        examples={"default": {"summary": "Common username", "value": "johndoe"}}
+    ),
+    password: str = Form(
+        ..., 
+        examples={"default": {"summary": "Common password", "value": "secret"}}
+    ),
+):
+    return {"username": username}
+```
+
+---
+
+### ✅ **Examples with `File()`**
+
+```python
+from fastapi import FastAPI, File, UploadFile
+
+app = FastAPI()
+
+@app.post("/upload/")
+async def upload_file(
+    file: UploadFile = File(
+        ..., 
+        examples={
+            "example1": {
+                "summary": "Sample file upload",
+                "description": "Upload a CSV file",
+                "value": {"filename": "data.csv", "content_type": "text/csv"},
+            }
+        },
+    )
+):
+    return {"filename": file.filename}
+```
+
+---
+
+### 🧠 Summary
+
+You can enhance the **developer experience** by providing clear, useful examples for:
+
+| Location     | Function   |
+| ------------ | ---------- |
+| Path param   | `Path()`   |
+| Query param  | `Query()`  |
+| Headers      | `Header()` |
+| Cookies      | `Cookie()` |
+| Request body | `Body()`   |
+| Form fields  | `Form()`   |
+| File upload  | `File()`   |
+
+
 
