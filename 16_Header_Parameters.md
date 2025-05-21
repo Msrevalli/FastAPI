@@ -1,6 +1,42 @@
-## 🧾 Header Parameters in FastAPI
+#### **header parameters** are used to extract data from the HTTP **headers** of incoming requests.
 
-Like `Query`, `Path`, and `Cookie`, headers are declared using the `Header()` function and the `Annotated` type hint.
+These are often used for:
+
+* Authentication (e.g., `Authorization` header)
+* API versioning (e.g., `X-API-Version`)
+* Custom metadata (e.g., `X-Request-ID`)
+
+---
+
+### ✅ How to Declare Header Parameters
+
+You use `Header` from `fastapi`:
+
+```python
+from fastapi import FastAPI, Header
+from typing import Annotated
+
+app = FastAPI()
+
+@app.get("/items/")
+async def read_items(user_agent: Annotated[str | None, Header()] = None):
+    return {"User-Agent": user_agent}
+```
+
+#### Notes:
+
+* The header name will be automatically converted from the parameter name (`user_agent` → `User-Agent`).
+* `Header()` is used just like `Query()`, `Path()`, or `Body()`.
+
+---
+
+### 🌐 Sending Header Example
+
+```http
+GET /items/ HTTP/1.1
+Host: example.com
+User-Agent: Mozilla/5.0
+```
 
 ---
 
