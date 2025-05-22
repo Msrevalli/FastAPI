@@ -1,4 +1,5 @@
-**most important features** — the **Dependency Injection (DI) system**. It might sound a bit intimidating at first, but once you grasp how it works, it makes your code **cleaner**, **more modular**, and **way more maintainable**.
+## Dependency Injection (DI) system ##
+It might sound a bit intimidating at first, but once you grasp how it works, it makes your code **cleaner**, **more modular**, and **way more maintainable**.
 
 Let’s walk through this in a structured way:
 
@@ -65,6 +66,38 @@ FastAPI:
 4. **Injects the result** into the route handler (`read_items`, `read_users`, etc.).
 
 You **don’t call** `common_parameters()` directly — FastAPI does that **for every request**.
+
+---
+
+Your script demonstrates **FastAPI's dependency injection system** using `Depends` and `Annotated` for reusing query parameters across multiple routes.
+
+Here's a breakdown:
+
+---
+
+## 🧩 Purpose
+
+You're creating a **reusable dependency** called `common_parameters` that extracts common query parameters and makes them available to multiple path operations (`/items/`, `/users/`).
+
+---
+
+## ✅ Example Request & Output
+
+**Request:**
+
+```
+GET /items/?q=books&skip=5&limit=10
+```
+
+**Response:**
+
+```json
+{
+  "q": "books",
+  "skip": 5,
+  "limit": 10
+}
+```
 
 ---
 
