@@ -33,6 +33,124 @@ async def read_items():
 async def read_users():
     return [{"username": "Rick"}, {"username": "Morty"}]
 ```
+---
+
+### ✅ **Valid Headers (Request succeeds)**
+
+**Request:**
+
+```http
+GET /items/ HTTP/1.1
+Host: localhost:8000
+X-Token: fake-super-secret-token
+X-Key: fake-super-secret-key
+```
+
+**Response:**
+
+```json
+[
+  {"item": "Portal Gun"},
+  {"item": "Plumbus"}
+]
+```
+
+**Status Code:** `200 OK`
+
+---
+
+### ❌ **Missing or Incorrect `X-Token`**
+
+**Request:**
+
+```http
+GET /items/ HTTP/1.1
+Host: localhost:8000
+X-Key: fake-super-secret-key
+```
+
+**Response:**
+
+```json
+{
+  "detail": "X-Token header invalid"
+}
+```
+
+**Status Code:** `400 Bad Request`
+
+---
+
+### ❌ **Missing or Incorrect `X-Key`**
+
+**Request:**
+
+```http
+GET /items/ HTTP/1.1
+Host: localhost:8000
+X-Token: fake-super-secret-token
+X-Key: wrong-key
+```
+
+**Response:**
+
+```json
+{
+  "detail": "X-Key header invalid"
+}
+```
+
+**Status Code:** `400 Bad Request`
+
+---
+
+### ❌ **No Headers at All**
+
+**Request:**
+
+```http
+GET /users/ HTTP/1.1
+Host: localhost:8000
+```
+
+**Response:**
+
+```json
+{
+  "detail": "X-Token header invalid"
+}
+```
+
+**Status Code:** `400 Bad Request`
+
+---
+
+### 🔁 Works the Same on `/users/` Route
+
+Because the dependencies are applied globally using `FastAPI(dependencies=[...])`, the same validation is enforced on **all routes**, including `/users/`.
+
+**Valid Request to `/users/`:**
+
+```http
+GET /users/ HTTP/1.1
+X-Token: fake-super-secret-token
+X-Key: fake-super-secret-key
+```
+
+**Response:**
+
+```json
+[
+  {"username": "Rick"},
+  {"username": "Morty"}
+]
+```
+
+**Status Code:** `200 OK`
+
+---
+
+This shows how global dependencies enforce security or checks across all endpoints.
 
 ### 🚀 Result:
 - Every request to any route will **trigger both `verify_token` and `verify_key`**.
