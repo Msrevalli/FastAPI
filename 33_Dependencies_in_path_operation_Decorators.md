@@ -1,4 +1,4 @@
-**declaring dependencies at the decorator level**, especially useful when you **don’t need the return value** in your route handler but **still want to enforce checks or run side effects** (like validation or auth).
+**Declaring dependencies at the decorator level**, especially useful when you **don’t need the return value** in your route handler but **still want to enforce checks or run side effects** (like validation or auth).
 
 ---
 
@@ -52,6 +52,97 @@ async def verify_key(x_key: Annotated[str, Header()]):
 async def read_items():
     return [{"item": "Foo"}, {"item": "Bar"}]
 ```
+---
+
+### ✅ **Valid Headers (Access Granted)**
+
+**Request:**
+
+```http
+GET /items/ HTTP/1.1
+Host: localhost:8000
+X-Token: fake-super-secret-token
+X-Key: fake-super-secret-key
+```
+
+**Response:**
+
+```json
+[
+  {"item": "Foo"},
+  {"item": "Bar"}
+]
+```
+
+**Status Code:** `200 OK`
+
+---
+
+### ❌ **Missing X-Token Header**
+
+**Request:**
+
+```http
+GET /items/ HTTP/1.1
+Host: localhost:8000
+X-Key: fake-super-secret-key
+```
+
+**Response:**
+
+```json
+{
+  "detail": "X-Token header invalid"
+}
+```
+
+**Status Code:** `400 Bad Request`
+
+---
+
+### ❌ **Invalid X-Key Header**
+
+**Request:**
+
+```http
+GET /items/ HTTP/1.1
+Host: localhost:8000
+X-Token: fake-super-secret-token
+X-Key: wrong-key
+```
+
+**Response:**
+
+```json
+{
+  "detail": "X-Key header invalid"
+}
+```
+
+**Status Code:** `400 Bad Request`
+
+---
+
+### ❌ **No Headers at All**
+
+**Request:**
+
+```http
+GET /items/ HTTP/1.1
+Host: localhost:8000
+```
+
+**Response:**
+
+```json
+{
+  "detail": "X-Token header invalid"
+}
+```
+
+**Status Code:** `400 Bad Request`
+
+---
 
 ### 🛡️ Behavior
 
